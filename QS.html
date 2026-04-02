@@ -192,7 +192,7 @@
       "Lateef Sahib","Awaiz Sahib","Sufiyan Sahib","Tasleem Sahiba","Taniya Sahiba"
     ];
 
-    let savedOrder = [...masterList];
+    let savedOrder = JSON.parse(localStorage.getItem('paraOrder')) || [...masterList];
     let draftSlots = Array(30).fill('');
     let dragName = null, dragEl = null, countdownTimer = null;
 
@@ -308,12 +308,21 @@
     function clearSlot(idx) { draftSlots[idx] = ''; renderPool(); renderSlots(); }
 
     function saveOrder() {
-      if (!draftSlots.every(Boolean)) return;
-      savedOrder = [...draftSlots];
-      draftSlots = Array(30).fill('');
-      renderPool(); renderSlots(); renderCurrentOrder(); generate();
-      alert('Order saved!');
-      showTab('schedule');
+        if (!draftSlots.every(Boolean)) return;
+
+        savedOrder = [...draftSlots];
+
+        // ✅ SAVE HERE
+        localStorage.setItem('paraOrder', JSON.stringify(savedOrder));
+
+        draftSlots = Array(30).fill('');
+        renderPool(); 
+        renderSlots(); 
+        renderCurrentOrder(); 
+        generate();
+
+        alert('Order saved!');
+        showTab('schedule');
     }
 
     function downloadPositionCSV() {
