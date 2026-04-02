@@ -124,7 +124,7 @@
       <button class="copy-btn" onclick="copyCSV()">Copy CSV</button>
     </div>
     <div class="auto-info" id="autoInfo">
-      <div>Current schedule: <strong id="autoSchedDisp">—</strong> &nbsp;|&nbsp; Updates every Monday at 23:07 IST</div>
+      <div>Current schedule: <strong id="autoSchedDisp">—</strong> &nbsp;|&nbsp; Updates every Monday 00:00 AM IST</div>
       <div class="countdown" id="countdown"></div>
     </div>
     <div class="panel">
@@ -187,7 +187,8 @@
     let dragName = null, dragEl = null, countdownTimer = null;
 
     const ANCHOR_SCHED = 61;
-    const ANCHOR_UTC = Date.UTC(2026, 2, 30, 17, 37, 0); // 31 Mar 2026 23:07 IST
+    // const ANCHOR_UTC = Date.UTC(2026, 2, 29, 17, 37, 0); // 29 Mar 2026 23:07 IST
+    const ANCHOR_UTC = Date.UTC(2026, 2, 29, 18, 30, 0); // 30 Mar 2026 00:00 IST
 
     function calcAutoSchedule() {
       const now = Date.now();
