@@ -192,7 +192,19 @@
       "Lateef Sahib","Awaiz Sahib","Sufiyan Sahib","Tasleem Sahiba","Taniya Sahiba"
     ];
 
-    let savedOrder = JSON.parse(localStorage.getItem('paraOrder')) || [...masterList];
+    // let savedOrder = JSON.parse(localStorage.getItem('paraOrder')) || [...masterList];
+    let savedOrder = [...masterList];
+
+    async function loadOrder() {
+      const ref = doc(db, "para", "order");
+      const snap = await getDoc(ref);
+    
+      if (snap.exists()) {
+        savedOrder = snap.data().list;
+      }
+    
+      generate();
+    }
     let draftSlots = Array(30).fill('');
     let dragName = null, dragEl = null, countdownTimer = null;
 
@@ -307,24 +319,43 @@
     }
     function clearSlot(idx) { draftSlots[idx] = ''; renderPool(); renderSlots(); }
 
-    function saveOrder() {
-        if (!draftSlots.every(Boolean)) return;
+    // function saveOrder() {
+    //     if (!draftSlots.every(Boolean)) return;
 
-        savedOrder = [...draftSlots];
+    //     savedOrder = [...draftSlots];
 
-        // ✅ SAVE HERE
-        localStorage.setItem('paraOrder', JSON.stringify(savedOrder));
+    //     // ✅ SAVE HERE
+    //     localStorage.setItem('paraOrder', JSON.stringify(savedOrder));
 
-        draftSlots = Array(30).fill('');
-        renderPool(); 
-        renderSlots(); 
-        renderCurrentOrder(); 
-        generate();
+    //     draftSlots = Array(30).fill('');
+    //     renderPool(); 
+    //     renderSlots(); 
+    //     renderCurrentOrder(); 
+    //     generate();
 
-        alert('Order saved!');
-        showTab('schedule');
+    //     alert('Order saved!');
+    //     showTab('schedule');
+    // }
+        async function saveOrder() {
+      if (!draftSlots.every(Boolean)) return;
+    
+      savedOrder = [...draftSlots];
+    
+      // 🔥 SAVE TO FIREBASE
+      await setDoc(doc(db, "para", "order"), {
+        list: savedOrder
+      });
+    
+      draftSlots = Array(30).fill('');
+    
+      renderPool();
+      renderSlots();
+      renderCurrentOrder();
+      generate();
+    
+      alert('Saved for everyone!');
+      showTab('schedule');
     }
-
     function downloadPositionCSV() {
       const rows = ['SNO,Name', ...savedOrder.map((n, i) => `${i+1},${n}`)].join('\n');
       const blob = new Blob([rows], { type: 'text/csv' });
@@ -380,12 +411,38 @@
       }
       navigator.clipboard.writeText(csv).then(() => alert('Copied!'));
     }
-
     generate();
-    window.onload = () => {
+    <!-- window.onload = () => {
         document.getElementById('autoToggle').checked = true;
         onAutoToggle();
+    }; -->
+      window.onload = async () => {
+      await loadOrder();   // 🔥 fetch shared data
+      document.getElementById('autoToggle').checked = true;
+      onAutoToggle();
     };
   </script>
+  <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+      import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    
+     const firebaseConfig = {
+      apiKey: "AIzaSyA1p1R9CMMoWcxXdBBEM-r9khvOP8p533o",
+      authDomain: "para-scheduler.firebaseapp.com",
+      projectId: "para-scheduler",
+      storageBucket: "para-scheduler.firebasestorage.app",
+      messagingSenderId: "43780851658",
+      appId: "1:43780851658:web:712cec64382b087db33133",
+      measurementId: "G-PSDBW56WTE"
+    };
+    
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+    
+      window.db = db;
+      window.doc = doc;
+      window.getDoc = getDoc;
+      window.setDoc = setDoc;
+    </script>
 </body>
 </html>
