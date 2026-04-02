@@ -115,7 +115,8 @@
       <div class="toggle-wrap">
         <span class="toggle-label">AUTO</span>
         <label class="toggle">
-          <input type="checkbox" id="autoToggle" onchange="onAutoToggle()" />
+          <!-- <input type="checkbox" id="autoToggle" onchange="onAutoToggle()" /> -->
+          <input type="checkbox" id="autoToggle" checked disabled />
           <div class="toggle-track"></div>
           <div class="toggle-thumb"></div>
         </label>
@@ -354,9 +355,19 @@
     }
 
     generate();
+    // window.onload = () => {
+    //     document.getElementById('autoToggle').checked = true;
+    //     onAutoToggle();
+    // };
     window.onload = () => {
         document.getElementById('autoToggle').checked = true;
-        onAutoToggle();
+    
+        // force AUTO UI
+        document.getElementById('manualField').style.display = 'none';
+        document.getElementById('autoInfo').classList.add('show');
+        document.getElementById('autoBadge').classList.add('show');
+    
+        startAutoMode(); // start auto logic directly
     };
   </script>
 </body>
