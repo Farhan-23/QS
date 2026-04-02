@@ -169,13 +169,13 @@
         <div class="scrollbox" id="poolList"></div>
       </div>
       <div class="col-box">
-        <div class="col-head">Positions <span class="progress" id="slotProgress">0 / 30 filled</span></div>
+        <div class="col-head">Positions <span class="progress" id="slotProgress">0 / 30 filled</span>
+        <button class="save-btn" id="saveBtn" onclick="saveOrder()">Save</button></div>
         <div class="scrollbox" id="posList"></div>
       </div>
       <div class="col-box">
         <div class="col-head">
           <span>Current saved order</span>
-          <button class="save-btn" id="saveBtn" onclick="saveOrder()">Save</button>
         </div>
         <div class="scrollbox" id="currentOrder"></div>
       </div>
@@ -373,6 +373,10 @@
     }
 
     generate();
+    window.onload = () => {
+        document.getElementById('autoToggle').checked = true;
+        onAutoToggle();
+    };
   </script>
 </body>
 </html>
