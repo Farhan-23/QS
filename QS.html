@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quran Para Scheduler</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f4;
+      color: #1c1c1a;
+      min-height: 100vh;
+      padding: 1.5rem 1rem;
+    }
+    h1 { font-size: 18px; font-weight: 500; margin-bottom: 1.2rem; color: #1c1c1a; }
+
+    /* tabs */
+    .tabs { display: flex; margin-bottom: 1.2rem; border: 0.5px solid #ccc; border-radius: 8px; overflow: hidden; width: fit-content; }
+    .tab { padding: 7px 18px; font-size: 13px; cursor: pointer; color: #666; background: none; border: none; font-family: inherit; }
+    .tab.active { background: #1c1c1a; color: #fff; }
+    .tab:not(.active):hover { background: #eee; }
+
+    /* inputs */
+    label { font-size: 13px; color: #666; display: block; margin-bottom: 5px; }
+    input[type=number] { width: 90px; padding: 6px 10px; border: 0.5px solid #ccc; border-radius: 8px; font-size: 14px; font-family: inherit; background: #fff; color: #1c1c1a; outline: none; height: 36px; }
+    input[type=number]:focus { border-color: #888; }
+
+    .top-bar { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 1rem; flex-wrap: wrap; }
+
+    /* toggle */
+    .toggle-wrap { display: flex; align-items: center; gap: 8px; height: 36px; }
+    .toggle-label { font-size: 13px; color: #666; }
+    .toggle { position: relative; width: 38px; height: 22px; cursor: pointer; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track { position: absolute; inset: 0; background: #ccc; border-radius: 11px; transition: background 0.2s; }
+    .toggle input:checked + .toggle-track { background: #1c1c1a; }
+    .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: left 0.2s; pointer-events: none; }
+    .toggle input:checked ~ .toggle-thumb { left: 19px; }
+
+    /* buttons */
+    .copy-btn, .io-btn { background: none; border: 0.5px solid #bbb; border-radius: 8px; padding: 0 14px; font-size: 13px; cursor: pointer; color: #555; height: 36px; font-family: inherit; }
+    .copy-btn:hover, .io-btn:hover { background: #eee; }
+    .save-btn { background: #1c1c1a; color: #fff; border: none; padding: 4px 12px; border-radius: 8px; font-size: 11px; cursor: pointer; opacity: 0.3; pointer-events: none; font-family: inherit; }
+    .save-btn.enabled { opacity: 1; pointer-events: auto; }
+
+    /* auto info */
+    .auto-info { font-size: 12px; color: #666; padding: 6px 10px; background: #eee; border-radius: 8px; border: 0.5px solid #ddd; margin-bottom: 1rem; display: none; }
+    .auto-info.show { display: block; }
+    .auto-info strong { color: #1c1c1a; }
+    .countdown { font-size: 11px; color: #888; margin-top: 3px; }
+
+    /* schedule table */
+    .panel { border: 0.5px solid #ddd; border-radius: 12px; overflow: hidden; background: #fff; }
+    .panel-head { padding: 7px 12px; background: #f5f5f4; border-bottom: 0.5px solid #ddd; font-size: 12px; font-weight: 500; color: #666; display: flex; justify-content: space-between; align-items: center; }
+    .auto-badge { font-size: 10px; background: #dcfce7; color: #166534; padding: 2px 7px; border-radius: 20px; display: none; }
+    .auto-badge.show { display: inline; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { font-size: 11px; color: #888; font-weight: 500; text-align: left; padding: 5px 12px; border-bottom: 0.5px solid #eee; background: #fafaf9; }
+    td { padding: 7px 12px; border-bottom: 0.5px solid #f0f0ef; color: #1c1c1a; }
+    td.sno { color: #999; font-size: 12px; width: 36px; }
+    td.name-cell { font-weight: 500; }
+    td.para-cell { font-weight: 700; font-size: 16px; color: #1c1c1a; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #fafaf9; }
+
+    /* edit layout */
+    .edit-layout { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: start; }
+    @media (max-width: 640px) { .edit-layout { grid-template-columns: 1fr; } }
+    .col-box { border: 0.5px solid #ddd; border-radius: 12px; overflow: hidden; background: #fff; }
+    .col-head { padding: 7px 10px; background: #f5f5f4; border-bottom: 0.5px solid #ddd; font-size: 11px; font-weight: 500; color: #666; display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .pool-search { width: 100%; border: none; border-bottom: 0.5px solid #eee; background: #fff; font-size: 12px; color: #1c1c1a; font-family: inherit; padding: 7px 10px; outline: none; }
+    .pool-search:focus { background: #fafaf9; }
+    .scrollbox { max-height: 380px; overflow-y: auto; }
+
+    /* pool */
+    .pool-item { padding: 7px 10px; font-size: 12px; color: #1c1c1a; cursor: grab; display: flex; align-items: center; gap: 6px; border-bottom: 0.5px solid #f0f0ef; user-select: none; }
+    .pool-item:last-child { border-bottom: none; }
+    .pool-item:hover:not(.used) { background: #fafaf9; }
+    .pool-item.used { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+    .drag-handle { color: #bbb; font-size: 10px; }
+
+    /* slots */
+    .pos-row { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 0.5px solid #f0f0ef; min-height: 36px; }
+    .pos-row:last-child { border-bottom: none; }
+    .pos-row.drag-over { background: #eff6ff; outline: 1.5px dashed #93c5fd; outline-offset: -2px; }
+    .pos-num { font-size: 11px; color: #999; width: 20px; flex-shrink: 0; }
+    .pos-chip { flex: 1; border-radius: 8px; padding: 4px 8px; font-size: 12px; min-height: 26px; display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+    .pos-chip.filled { background: #f5f5f4; border: 0.5px solid #ddd; font-weight: 500; color: #1c1c1a; }
+    .pos-chip.empty { border: 0.5px dashed #ccc; color: #aaa; font-style: italic; background: transparent; }
+    .pos-clear { cursor: pointer; color: #aaa; font-size: 14px; line-height: 1; }
+    .pos-clear:hover { color: #333; }
+
+    /* current order */
+    .order-item { padding: 6px 10px; font-size: 12px; color: #1c1c1a; border-bottom: 0.5px solid #f0f0ef; display: flex; gap: 8px; align-items: center; }
+    .order-item:last-child { border-bottom: none; }
+    .order-num { font-size: 11px; color: #999; width: 20px; flex-shrink: 0; }
+    .order-name { font-weight: 500; }
+
+    /* io bar */
+    .io-bar { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: #f5f5f4; border-bottom: 0.5px solid #ddd; flex-wrap: wrap; }
+    .io-hint { font-size: 11px; color: #888; }
+    .io-sep { color: #ccc; }
+    .upload-input { display: none; }
+    .toast { font-size: 11px; color: #166534; padding: 2px 0; display: none; }
+    .toast.show { display: inline; }
+    .hint { font-size: 12px; color: #888; margin-bottom: 10px; }
+    .progress { font-size: 11px; color: #888; }
+  </style>
+</head>
+<body>
+  <h1>Quran Para Scheduler</h1>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('schedule')">Schedule</button>
+    <button class="tab" onclick="showTab('editnames')">Edit names</button>
+  </div>
+
+  <!-- SCHEDULE TAB -->
+  <div id="scheduleTab">
+    <div class="top-bar">
+      <div id="manualField">
+        <label>Schedule number</label>
+        <input type="number" id="schedNum" value="61" min="1" oninput="generate()" />
+      </div>
+      <div class="toggle-wrap">
+        <span class="toggle-label">AUTO</span>
+        <label class="toggle">
+          <input type="checkbox" id="autoToggle" onchange="onAutoToggle()" />
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <button class="copy-btn" onclick="copyCSV()">Copy CSV</button>
+    </div>
+    <div class="auto-info" id="autoInfo">
+      <div>Current schedule: <strong id="autoSchedDisp">—</strong> &nbsp;|&nbsp; Updates every Monday at 23:07 IST</div>
+      <div class="countdown" id="countdown"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <span id="panelHead">Schedule 61 — para assignments by position</span>
+        <span class="auto-badge" id="autoBadge">AUTO</span>
+      </div>
+      <table>
+        <thead><tr><th>SNO</th><th>Name</th><th>Para assigned</th></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EDIT TAB -->
+  <div id="editnamesTab" style="display:none;">
+    <div class="col-box" style="margin-bottom:12px;">
+      <div class="io-bar">
+        <span class="io-hint">Position list CSV:</span>
+        <button class="io-btn" onclick="downloadPositionCSV()">Download current order</button>
+        <span class="io-sep">|</span>
+        <button class="io-btn" onclick="document.getElementById('uploadInput').click()">Upload CSV</button>
+        <input type="file" id="uploadInput" class="upload-input" accept=".csv,text/csv" onchange="uploadCSV(event)" />
+        <span class="toast" id="toast">Loaded!</span>
+      </div>
+    </div>
+    <p class="hint">Drag from the pool → drop onto a position. Or upload a CSV to skip drag-drop.</p>
+    <div class="edit-layout">
+      <div class="col-box">
+        <div class="col-head">Name pool <span class="progress" id="poolProgress">30 remaining</span></div>
+        <input class="pool-search" id="poolSearch" placeholder="Search…" oninput="renderPool()" />
+        <div class="scrollbox" id="poolList"></div>
+      </div>
+      <div class="col-box">
+        <div class="col-head">Positions <span class="progress" id="slotProgress">0 / 30 filled</span></div>
+        <div class="scrollbox" id="posList"></div>
+      </div>
+      <div class="col-box">
+        <div class="col-head">
+          <span>Current saved order</span>
+          <button class="save-btn" id="saveBtn" onclick="saveOrder()">Save</button>
+        </div>
+        <div class="scrollbox" id="currentOrder"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const masterList = [
+      "Shaheen Sahiba","Shabana Sahiba JN","Taseen Sahiba","Asiya Sahiba","Jabeen Sahiba",
+      "Imrana Sahiba","Rehana Sahiba","Humera Sahiba","Tharana Sahiba","Yasmeen Sahiba",
+      "Shafiya Sahiba","Shabana Sahiba cpl","Parveen Sahiba","Sony Sahiba","Hajra Sahiba",
+      "Fazila Sahiba","Uzma Sahiba","Sana Sahiba","Mahejabeen Sahiba","Matheen Sahib",
+      "Abbas Sahib","Faisal Sahib","Moin Sahib","Saif Sahib","Farhan Sahib",
+      "Lateef Sahib","Awaiz Sahib","Sufiyan Sahib","Tasleem Sahiba","Taniya Sahiba"
+    ];
+
+    let savedOrder = [...masterList];
+    let draftSlots = Array(30).fill('');
+    let dragName = null, dragEl = null, countdownTimer = null;
+
+    const ANCHOR_SCHED = 61;
+    const ANCHOR_UTC = Date.UTC(2026, 2, 31, 17, 37, 0); // 31 Mar 2026 23:07 IST
+
+    function calcAutoSchedule() {
+      const now = Date.now();
+      if (now < ANCHOR_UTC) return ANCHOR_SCHED;
+      const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+      return ANCHOR_SCHED + Math.floor((now - ANCHOR_UTC) / msPerWeek);
+    }
+    function msToNextUpdate() {
+      const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+      const elapsed = Date.now() - ANCHOR_UTC;
+      return msPerWeek - (((elapsed % msPerWeek) + msPerWeek) % msPerWeek);
+    }
+    function formatCountdown(ms) {
+      const s = Math.floor(ms / 1000);
+      return `Next update in: ${Math.floor(s/86400)}d ${Math.floor((s%86400)/3600)}h ${Math.floor((s%3600)/60)}m ${s%60}s`;
+    }
+
+    function onAutoToggle() {
+      const on = document.getElementById('autoToggle').checked;
+      document.getElementById('manualField').style.display = on ? 'none' : '';
+      document.getElementById('autoInfo').classList.toggle('show', on);
+      document.getElementById('autoBadge').classList.toggle('show', on);
+      if (on) { startAutoMode(); }
+      else { clearInterval(countdownTimer); countdownTimer = null; generate(); }
+    }
+    function startAutoMode() {
+      const sched = calcAutoSchedule();
+      document.getElementById('schedNum').value = sched;
+      document.getElementById('autoSchedDisp').textContent = sched;
+      generate();
+      document.getElementById('countdown').textContent = formatCountdown(msToNextUpdate());
+      clearInterval(countdownTimer);
+      countdownTimer = setInterval(() => {
+        const s = calcAutoSchedule();
+        document.getElementById('schedNum').value = s;
+        document.getElementById('autoSchedDisp').textContent = s;
+        generate();
+        document.getElementById('countdown').textContent = formatCountdown(msToNextUpdate());
+      }, 1000);
+    }
+
+    function showTab(t) {
+      document.getElementById('scheduleTab').style.display = t === 'schedule' ? '' : 'none';
+      document.getElementById('editnamesTab').style.display = t === 'editnames' ? '' : 'none';
+      document.querySelectorAll('.tab').forEach((el, i) => {
+        el.classList.toggle('active', (i===0&&t==='schedule')||(i===1&&t==='editnames'));
+      });
+      if (t === 'editnames') { renderPool(); renderSlots(); renderCurrentOrder(); }
+    }
+
+    function usedNames() { return new Set(draftSlots.filter(Boolean)); }
+
+    function renderPool() {
+      const q = (document.getElementById('poolSearch').value || '').toLowerCase();
+      const used = usedNames();
+      const remaining = masterList.filter(n => !used.has(n)).length;
+      document.getElementById('poolProgress').textContent = remaining + ' remaining';
+      document.getElementById('poolList').innerHTML = masterList
+        .filter(n => n.toLowerCase().includes(q))
+        .map(n => {
+          const isUsed = used.has(n);
+          return `<div class="pool-item ${isUsed ? 'used' : ''}" draggable="${!isUsed}"
+            ondragstart="startDrag(event,'${n.replace(/'/g,"\\'")}',this)"
+            ondragend="endDrag()">
+            <span class="drag-handle">⠿</span><span>${n}</span>
+          </div>`;
+        }).join('');
+    }
+
+    function renderSlots() {
+      const filled = draftSlots.filter(Boolean).length;
+      document.getElementById('slotProgress').textContent = `${filled} / 30 filled`;
+      document.getElementById('posList').innerHTML = draftSlots.map((name, i) => `
+        <div class="pos-row" id="slot-${i}"
+          ondragover="onOver(event,${i})"
+          ondragleave="onLeave(${i})"
+          ondrop="onDrop(event,${i})">
+          <span class="pos-num">${i+1}</span>
+          <div class="pos-chip ${name ? 'filled' : 'empty'}">
+            <span>${name || 'drop here'}</span>
+            ${name ? `<span class="pos-clear" onclick="clearSlot(${i})">×</span>` : ''}
+          </div>
+        </div>`).join('');
+      document.getElementById('saveBtn').classList.toggle('enabled', draftSlots.every(Boolean));
+    }
+
+    function renderCurrentOrder() {
+      document.getElementById('currentOrder').innerHTML = savedOrder.map((n, i) =>
+        `<div class="order-item"><span class="order-num">${i+1}</span><span class="order-name">${n}</span></div>`
+      ).join('');
+    }
+
+    function startDrag(e, name, el) { dragName = name; dragEl = el; el.classList.add('dragging-now'); e.dataTransfer.effectAllowed = 'move'; }
+    function endDrag() { if (dragEl) dragEl.classList.remove('dragging-now'); dragEl = null; dragName = null; }
+    function onOver(e, idx) { e.preventDefault(); document.getElementById('slot-'+idx).classList.add('drag-over'); }
+    function onLeave(idx) { document.getElementById('slot-'+idx).classList.remove('drag-over'); }
+    function onDrop(e, idx) {
+      e.preventDefault();
+      document.getElementById('slot-'+idx).classList.remove('drag-over');
+      if (!dragName) return;
+      const ex = draftSlots.indexOf(dragName);
+      if (ex !== -1) draftSlots[ex] = '';
+      draftSlots[idx] = dragName;
+      dragName = null;
+      if (dragEl) { dragEl.classList.remove('dragging-now'); dragEl = null; }
+      renderPool(); renderSlots();
+    }
+    function clearSlot(idx) { draftSlots[idx] = ''; renderPool(); renderSlots(); }
+
+    function saveOrder() {
+      if (!draftSlots.every(Boolean)) return;
+      savedOrder = [...draftSlots];
+      draftSlots = Array(30).fill('');
+      renderPool(); renderSlots(); renderCurrentOrder(); generate();
+      alert('Order saved!');
+      showTab('schedule');
+    }
+
+    function downloadPositionCSV() {
+      const rows = ['SNO,Name', ...savedOrder.map((n, i) => `${i+1},${n}`)].join('\n');
+      const blob = new Blob([rows], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'position_order.csv';
+      a.click();
+    }
+
+    function uploadCSV(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const lines = ev.target.result.trim().split('\n').map(l => l.trim()).filter(Boolean);
+        const names = [];
+        for (const line of lines) {
+          if (line.toLowerCase().startsWith('sno')) continue;
+          const cols = line.split(',');
+          const name = (cols[1] || '').replace(/^"|"$/g, '').trim();
+          if (name) names.push(name);
+        }
+        if (!names.length) { alert('No names found in CSV.'); return; }
+        draftSlots = Array(30).fill('');
+        names.slice(0, 30).forEach((n, i) => { draftSlots[i] = n; });
+        renderPool(); renderSlots();
+        const t = document.getElementById('toast');
+        t.textContent = `Loaded ${Math.min(names.length, 30)} names — review then hit Save`;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3500);
+        e.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    function generate() {
+      const sched = Math.max(1, parseInt(document.getElementById('schedNum').value) || 1);
+      document.getElementById('panelHead').textContent = `Schedule ${sched} — para assignments by position`;
+      let rows = '';
+      for (let i = 0; i < 30; i++) {
+        const para = ((i + sched - 1) % 30) + 1;
+        rows += `<tr><td class="sno">${i+1}</td><td class="name-cell">${savedOrder[i]}</td><td class="para-cell">${para}</td></tr>`;
+      }
+      document.getElementById('tableBody').innerHTML = rows;
+    }
+
+    function copyCSV() {
+      const sched = Math.max(1, parseInt(document.getElementById('schedNum').value) || 1);
+      let csv = 'SNO,Name,Para\n';
+      for (let i = 0; i < 30; i++) {
+        const para = ((i + sched - 1) % 30) + 1;
+        csv += `${i+1},${savedOrder[i]},${para}\n`;
+      }
+      navigator.clipboard.writeText(csv).then(() => alert('Copied!'));
+    }
+
+    generate();
+  </script>
+</body>
+</html>
